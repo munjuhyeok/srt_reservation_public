@@ -8,15 +8,15 @@ from srt_reservation.util import parse_cli_args
 if __name__ == "__main__":
     cli_args = parse_cli_args()
 
-    login_id = cli_args.user
-    login_psw = cli_args.psw
-    dpt_stn = cli_args.dpt
-    arr_stn = cli_args.arr
-    dpt_dt = cli_args.dt
-    dpt_tm = cli_args.tm
+    login_id = "$id"
+    login_psw = "$psw"
+    dpt_stn = "수서"
+    arr_stn = "동탄"
+    dpt_dt = "20231114"
+    dpt_tm = "18" # should be even number 짝수
 
-    num_trains_to_check = cli_args.num
-    want_reserve = cli_args.reserve
+    order_trains_to_check = [1,3,5] # order of trains to reserve 몇번째 기차 예매할지
+    want_reserve = True # ignore it
 
-    srt = SRT(dpt_stn, arr_stn, dpt_dt, dpt_tm, num_trains_to_check, want_reserve)
+    srt = SRT(dpt_stn, arr_stn, dpt_dt, dpt_tm, order_trains_to_check, want_reserve)
     srt.run(login_id, login_psw)

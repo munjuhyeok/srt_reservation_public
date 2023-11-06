@@ -8,21 +8,23 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.select import Select
-from selenium.common.exceptions import ElementClickInterceptedException, StaleElementReferenceException, WebDriverException
+from selenium.common.exceptions import ElementClickInterceptedException, StaleElementReferenceException, WebDriverException, UnexpectedAlertPresentException
 
 from srt_reservation.exceptions import InvalidStationNameError, InvalidDateError, InvalidDateFormatError, InvalidTimeFormatError
 from srt_reservation.validation import station_list
+from selenium.webdriver.common.alert import Alert
+from slack_sdk import WebClient
 
 chromedriver_path = r'C:\workspace\chromedriver.exe'
 
 class SRT:
-    def __init__(self, dpt_stn, arr_stn, dpt_dt, dpt_tm, num_trains_to_check=2, want_reserve=False):
+    def __init__(self, dpt_stn, arr_stn, dpt_dt, dpt_tm, order_trains_to_check=2, want_reserve=False):
         """
         :param dpt_stn: SRT 출발역
         :param arr_stn: SRT 도착역
         :param dpt_dt: 출발 날짜 YYYYMMDD 형태 ex) 20220115
         :param dpt_tm: 출발 시간 hh 형태, 반드시 짝수 ex) 06, 08, 14, ...
-        :param num_trains_to_check: 검색 결과 중 예약 가능 여부 확인할 기차의 수 ex) 2일 경우 상위 2개 확인
+        :param order_trains_to_check: 검색 결과 중 예약 가능 여부 확인할 기차의 수 ex) 2일 경우 상위 2개 확인
         :param want_reserve: 예약 대기가 가능할 경우 선택 여부
         """
         self.login_id = None
@@ -33,12 +35,13 @@ class SRT:
         self.dpt_dt = dpt_dt
         self.dpt_tm = dpt_tm
 
-        self.num_trains_to_check = num_trains_to_check
+        self.order_trains_to_check = order_trains_to_check
         self.want_reserve = want_reserve
         self.driver = None
 
         self.is_booked = False  # 예약 완료 되었는지 확인용
         self.cnt_refresh = 0  # 새로고침 회수 기록
+        self.client = WebClient("$slack_token")
 
         self.check_input()
 
@@ -60,9 +63,9 @@ class SRT:
 
     def run_driver(self):
         try:
-            self.driver = webdriver.Chrome(executable_path=chromedriver_path)
+            self.driver = webdriver.Chrome()
         except WebDriverException:
-            self.driver = webdriver.Chrome(ChromeDriverManager().install())
+            self.driver = webdriver.Chrome()
 
     def login(self):
         self.driver.get('https://etk.srail.co.kr/cmc/01/selectLoginForm.do')
@@ -106,7 +109,7 @@ class SRT:
         Select(self.driver.find_element(By.ID, "dptTm")).select_by_visible_text(self.dpt_tm)
 
         print("기차를 조회합니다")
-        print(f"출발역:{self.dpt_stn} , 도착역:{self.arr_stn}\n날짜:{self.dpt_dt}, 시간: {self.dpt_tm}시 이후\n{self.num_trains_to_check}개의 기차 중 예약")
+        print(f"출발역:{self.dpt_stn} , 도착역:{self.arr_stn}\n날짜:{self.dpt_dt}, 시간: {self.dpt_tm}시 이후\n{self.order_trains_to_check}번째 기차 중 예약")
         print(f"예약 대기 사용: {self.want_reserve}")
 
         self.driver.find_element(By.XPATH, "//input[@value='조회하기']").click()
@@ -132,14 +135,20 @@ class SRT:
                 self.driver.implicitly_wait(3)
 
             # 예약이 성공하면
-            if self.driver.find_elements(By.ID, 'isFalseGotoMain'):
-                self.is_booked = True
-                print("예약 성공")
-                return self.driver
-            else:
-                print("잔여석 없음. 다시 검색")
-                self.driver.back()  # 뒤로가기
-                self.driver.implicitly_wait(5)
+            try:
+                if self.driver.find_elements(By.ID, 'isFalseGotoMain'):
+                    self.is_booked = True
+                    print("예약 성공")
+                    time.sleep(600)
+                    return self.driver
+                else:
+                    print("잔여석 없음. 다시 검색")
+                    self.driver.back()  # 뒤로가기
+                    self.driver.implicitly_wait(5)
+            except UnexpectedAlertPresentException:
+                return True
+
+
 
     def refresh_result(self):
         submit = self.driver.find_element(By.XPATH, "//input[@value='조회하기']")
@@ -159,7 +168,7 @@ class SRT:
 
     def check_result(self):
         while True:
-            for i in range(1, self.num_trains_to_check+1):
+            for i in self.order_trains_to_check:
                 try:
                     standard_seat = self.driver.find_element(By.CSS_SELECTOR, f"#result-form > fieldset > div.tbl_wrap.th_thead > table > tbody > tr:nth-child({i}) > td:nth-child(7)").text
                     reservation = self.driver.find_element(By.CSS_SELECTOR, f"#result-form > fieldset > div.tbl_wrap.th_thead > table > tbody > tr:nth-child({i}) > td:nth-child(8)").text
@@ -186,6 +195,8 @@ class SRT:
         self.login()
         self.go_search()
         self.check_result()
+        self.client.chat_postMessage(channel="#alarm", text="book sucess")
+        time.sleep(600)
 
 #
 # if __name__ == "__main__":
