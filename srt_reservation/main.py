@@ -18,7 +18,7 @@ from slack_sdk import WebClient
 chromedriver_path = r'C:\workspace\chromedriver.exe'
 
 class SRT:
-    def __init__(self, dpt_stn, arr_stn, dpt_dt, dpt_tm, order_trains_to_check=2, want_reserve=False):
+    def __init__(self, dpt_stn, arr_stn, dpt_dt, dpt_tm, order_trains_to_check=2, want_reserve=False, slack_token = ""):
         """
         :param dpt_stn: SRT 출발역
         :param arr_stn: SRT 도착역
@@ -41,7 +41,7 @@ class SRT:
 
         self.is_booked = False  # 예약 완료 되었는지 확인용
         self.cnt_refresh = 0  # 새로고침 회수 기록
-        self.client = WebClient("$slack_token")
+        self.client = WebClient(slack_token)
 
         self.check_input()
 
