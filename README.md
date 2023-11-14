@@ -7,7 +7,7 @@
 
 ## 다운
 ```cmd
-git clone https://github.com/kminito/srt_reservation.git
+git clone https://github.com/munjuhyeok/srt_reservation_public.git
 ```
   
 ## 필요
@@ -21,7 +21,7 @@ pip install -r requirements.txt
 just modify quickstart.py and run it.
 
 ```bash
-$ python quickstart.py
+python quickstart.py
 
 ```
 

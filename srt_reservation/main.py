@@ -139,6 +139,7 @@ class SRT:
                 if self.driver.find_elements(By.ID, 'isFalseGotoMain'):
                     self.is_booked = True
                     print("예약 성공")
+                    self.client.chat_postMessage(channel="#alarm", text="book sucess")
                     time.sleep(600)
                     return self.driver
                 else:
@@ -195,7 +196,6 @@ class SRT:
         self.login()
         self.go_search()
         self.check_result()
-        self.client.chat_postMessage(channel="#alarm", text="book sucess")
         time.sleep(600)
 
 #
