@@ -72,7 +72,7 @@ class SRT:
         self.driver.implicitly_wait(15)
         self.driver.find_element(By.ID, 'srchDvNm01').send_keys(str(self.login_id))
         self.driver.find_element(By.ID, 'hmpgPwdCphd01').send_keys(str(self.login_psw))
-        self.driver.find_element(By.XPATH, '//*[@id="login-form"]/fieldset/div[1]/div[1]/div[2]/div/div[2]/input').click()
+        self.driver.find_element(By.XPATH, '//*[@id="login-form"]/fieldset/div[1]/div[2]/div[2]/div/div[2]/input').click()
         self.driver.implicitly_wait(5)
         return self.driver
 
