@@ -169,6 +169,8 @@ class SRT:
 
     def check_result(self):
         while True:
+            alert = self.driver.switch_to.alert
+            alert.accept()
             for i in self.order_trains_to_check:
                 try:
                     standard_seat = self.driver.find_element(By.CSS_SELECTOR, f"#result-form > fieldset > div.tbl_wrap.th_thead > table > tbody > tr:nth-child({i}) > td:nth-child(7)").text
